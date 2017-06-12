@@ -13,7 +13,7 @@ import (
 	"math"
 )
 
-var tableOfLetters = [][][]float32{
+var tableOfLetters = [][][]float64{
 	{
 		{0.0, 1.0, 0.0},
 		{1.0, 0.0, 1.0},
@@ -40,7 +40,7 @@ var tableOfLetters = [][][]float32{
 	},
 }
 
-var tableOfLettersValidate = [][][]float32{
+var tableOfLettersValidate = [][][]float64{
 	{
 		{0.0, 1.0, 1.0},
 		{0.0, 0.0, 1.0},
@@ -65,8 +65,8 @@ var tableOfLettersValidate = [][][]float32{
 }
 
 type neuralNetwork struct {
-	enters, weights    []float32
-	out, learningSpeed float32
+	enters, weights    []float64
+	out, learningSpeed float64
 }
 
 func (neuralNet *neuralNetwork) summator() {
@@ -74,18 +74,10 @@ func (neuralNet *neuralNetwork) summator() {
 	for i, enter := range neuralNet.enters {
 		neuralNet.out += enter * neuralNet.weights[i]
 	}
-	neuralNet.out = float32(1 / (1 + math.Exp(float64(-neuralNet.out))))
-	switch {
-	case neuralNet.out >= 0.1 && neuralNet.out < 0.3:
-		neuralNet.out = 65
-	case neuralNet.out >= 0.3 && neuralNet.out < 0.7:
-		neuralNet.out = 66
-	case neuralNet.out >= 0.7 && neuralNet.out < 0.9:
-		neuralNet.out = 67
-	}
+	neuralNet.out = toFixed(1/(1+math.Exp(-neuralNet.out))*3+65, 0)
 }
 
-func (neuralNet *neuralNetwork) correctWeights(error float32) {
+func (neuralNet *neuralNetwork) correctWeights(error float64) {
 	for i, weight := range neuralNet.weights {
 		neuralNet.weights[i] = neuralNet.learningSpeed*error*neuralNet.enters[i] + weight
 	}
@@ -95,7 +87,7 @@ func (neuralNet *neuralNetwork) train() {
 	epochError := 1.0
 	for epoch := 0; epoch < 20 || epochError != 0; epoch++ {
 		epochError = 0
-		trainArray := []float32{}
+		trainArray := []float64{}
 		for i := 0; i < len(tableOfLetters); i++ {
 			trainArray = trainArray[:0]
 			for j := 0; j < len(tableOfLetters[i])-1; j++ {
@@ -114,12 +106,12 @@ func main() {
 	fmt.Println("Initialization ...")
 	nNet := neuralNetwork{
 		learningSpeed: 0.001,
-		weights:       []float32{0.01, 0.2, 0.03, 0.1, 0.05, 0.033, 0.22, 0.001, 0.09, 0.14, 0.214, 0.05, 0.033, 0.22, 0.2},
+		weights:       []float64{0.01, 0.2, 0.03, 0.1, 0.05, 0.033, 0.22, 0.001, 0.09, 0.14, 0.214, 0.05, 0.033, 0.22, 0.2},
 	}
 	fmt.Println("Start learning machine")
 	nNet.train()
 	fmt.Println("Stop learning machines\n")
-	trainArray := []float32{}
+	trainArray := []float64{}
 	for i := 0; i < len(tableOfLettersValidate); i++ {
 		trainArray = trainArray[:0]
 		for j := 0; j < len(tableOfLettersValidate[i]); j++ {
@@ -129,4 +121,13 @@ func main() {
 		nNet.summator()
 		fmt.Println("Out result: ", string(int(nNet.out)), "\t for: ", nNet.enters)
 	}
+}
+
+func round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
+}
+
+func toFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(round(num*output)) / output
 }
